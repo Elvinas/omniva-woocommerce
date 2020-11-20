@@ -589,7 +589,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
           if ($parcel_terminal)
             $client_address = '<address ' . $parcel_terminal . ' />';
           else
-	*/
+  */
           $client_address = '<address postcode="' . $this->clean(get_post_meta($id_order, '_shipping_postcode', true)) . '" ' . $parcel_terminal . ' deliverypoint="' . $this->clean(get_post_meta($id_order, '_shipping_city', true)) . '" country="' . $this->clean(get_post_meta($id_order, '_shipping_country', true)) . '" street="' . $this->clean(get_post_meta($id_order, '_shipping_address_1', true)) . '" />';
           $phones = '';
           if ($mobile = $this->clean(get_post_meta($id_order, '_billing_phone', true))) $phones .= '<mobile>' . $mobile . '</mobile>';
@@ -862,9 +862,41 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
           $pdf->setPrintFooter(false);
           if (!is_array($orderIds))
             $orderIds = array($orderIds);
+
+
+          // EB
+          //wc_switch_to_site_locale();
+          //wc_restore_locale();
+
           foreach (array_unique($orderIds) as $orderId) {
             $order = get_post((int) $orderId);
             $wc_order = wc_get_order((int) $orderId);
+
+
+            do_action('woocommerce_before_resend_order_emails', $wc_order);
+            // Ensure gateways are loaded in case they need to insert data into the emails.
+            WC()->payment_gateways();
+            WC()->shipping();
+
+             // Load mailer.
+            $mailer = WC()->mailer();
+
+            $email_to_send = 'customer_invoice';
+            $mails = $mailer->get_emails();
+
+
+
+            if (!empty($mails)) {
+                foreach ($mails as $mail) {
+                    if ($mail->id == $email_to_send) {
+                        $mail->trigger($wc_order->get_id(), $wc_order);
+                        $wc_order->add_order_note( sprintf( __('%s nusiųsta siuntos numeris.', 'woocommerce'), $mail->title), false, true);
+                    }
+                }
+            }
+
+            do_action('woocommerce_after_resend_order_email', $wc_order, $email_to_send);
+
             $send_method = "";
             foreach ($wc_order->get_items('shipping') as $item_id => $shipping_item_obj) {
               $send_method        = $shipping_item_obj->get_method_id();
