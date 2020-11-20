@@ -868,23 +868,19 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
           //wc_switch_to_site_locale();
           //wc_restore_locale();
 
+           // Load mailer.
+           $mailer = WC()->mailer();
+           $email_to_send = 'customer_invoice';
+           $mails = $mailer->get_emails();
+
           foreach (array_unique($orderIds) as $orderId) {
             $order = get_post((int) $orderId);
             $wc_order = wc_get_order((int) $orderId);
-
 
             do_action('woocommerce_before_resend_order_emails', $wc_order);
             // Ensure gateways are loaded in case they need to insert data into the emails.
             WC()->payment_gateways();
             WC()->shipping();
-
-             // Load mailer.
-            $mailer = WC()->mailer();
-
-            $email_to_send = 'customer_invoice';
-            $mails = $mailer->get_emails();
-
-
 
             if (!empty($mails)) {
                 foreach ($mails as $mail) {
